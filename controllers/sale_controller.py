@@ -50,3 +50,34 @@ async def create(sale: Sale, db: Session = Depends(get_db)):
     db.refresh(new_sale)
 
     return new_sale
+
+
+@router.put("/sales/{sale_id}")
+async def update(sale_id: int, sale: Sale, db: Session = Depends(get_db)):
+    updated_sale: DBSale | None = db.query(DBSale).filter(DBSale.id == sale_id).first()
+
+    if updated_sale is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND)
+    
+    db.execute(
+        sqlalchemy.update(DBSale)
+        .where(DBSale.id == sale_id)
+        .values(sale.model_dump())
+    )
+    db.commit()
+    db.refresh(updated_sale)
+
+    return updated_sale
+
+
+@router.delete("/sales/{sale_id}")
+async def destroy(sale_id: int, db: Session = Depends(get_db)):
+    sale_query = db.query(DBSale).filter(DBSale.id == sale_id)
+
+    if sale_query.first() is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND)
+    
+    sale_query.delete()
+    db.commit()
+
+    return status.HTTP_204_NO_CONTENT
